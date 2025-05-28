@@ -1,0 +1,12 @@
+name: shinychat
+title: shinychat
+username: teebusch
+account: teebusch
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 14834189
+bundleId: 10356938
+url: https://teebusch.shinyapps.io/shinychat/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
