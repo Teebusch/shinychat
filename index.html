@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shinychat</title>
+</head>
+<body class="flex flex-row w-screen h-screen">
+  <script type="module" src="/src/main.ts"></script>
+  
+  <!-- sidebar with user list -->
+  <aside class="flex flex-col h-screen w-64 bg-base-200">
+    <div class="flex-1 overflow-y-auto">
+      <ul class="menu p-4">
+        <li><a href="#">User 1</a></li>
+        <li><a href="#">User 2</a></li>
+        <li><a href="#">User 3</a></li>
+        <li><a href="#">User 4</a></li>
+      </ul>
+    </div>
+  </aside>
+  
+  <main class="flex grow flex-col h-auto items-center">
+    
+    <!-- chat messages -->
+    <div id="messages" x-data class="max-w-xl w-full p-2 flex-1">
+      <template x-for="message in $store.room.messages" :key="message.id">
+        <div class="chat chat-end">
+          <div class="chat-image avatar">
+            <div class="w-16 rounded-sm">
+              <img src="https://img.daisyui.com/images/profile/demo/anakeen@192.webp"/>
+            </div>
+          </div>
+          <div class="chat-bubble mx-2">
+            <div class="text-xs opacity-50">Anakin</div>
+            <div x-text="message.text"></div>
+            <time class="text-xs opacity-50" x-text="formatTime(message.timestamp)"></time>
+          </div>
+        </div>
+      </template>
+    </div>
+    
+    <!-- Chat message input area -->
+    <div id="message-editor" class="flex-none fixed bottom-0 max-w-xl w-full p-2 bg-base-200 shadow-sm rounded-md">
+      <textarea class="textarea w-full resize-none rounded-sm" placeholder="Message"></textarea>
+    </div>
+  </main>
+  
+</body>
+</html>
