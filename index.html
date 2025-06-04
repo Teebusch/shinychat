@@ -6,46 +6,77 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Shinychat</title>
 </head>
-<body class="flex flex-row w-screen h-screen">
+<body class="flex h-screen w-screen">
   <script type="module" src="/src/main.ts"></script>
-  
-  <!-- sidebar with user list -->
-  <aside class="flex flex-col h-screen w-64 bg-base-200">
-    <div class="flex-1 overflow-y-auto">
-      <ul class="menu p-4">
-        <li><a href="#">User 1</a></li>
-        <li><a href="#">User 2</a></li>
-        <li><a href="#">User 3</a></li>
-        <li><a href="#">User 4</a></li>
-      </ul>
-    </div>
-  </aside>
-  
-  <main class="flex grow flex-col h-auto items-center">
-    
-    <!-- chat messages -->
-    <div id="messages" x-data class="max-w-xl w-full p-2 flex-1">
-      <template x-for="message in $store.room.messages" :key="message.id">
-        <div class="chat chat-end">
-          <div class="chat-image avatar">
-            <div class="w-16 rounded-sm">
-              <img src="https://img.daisyui.com/images/profile/demo/anakeen@192.webp"/>
+
+    <!-- Sidebar with user list -->
+    <aside class="bg-base-200 p-4 w-16 lg:w-1/4">
+      <h3 class="text-lg mb-4 hidden lg:block">
+        Active Users
+        <span x-data x-text="$store.users.users.length" class="badge badge-primary badge-sm ml-2"></span>
+      </h3>
+      <ul x-data class="flex flex-col gap-2">
+
+        <!-- self -->
+        <li x-data class="flex flex-row gap-2 items-center rouded-lg p-2 bg-base-300">
+            <img class="w-10 rounded-sm" :src="'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=' + $store.user.id"/>
+          </div>
+          <div class="hidden lg:block">
+            <div x-text="$store.user.name" class="font-bold"></div>
+            <div class="text-sm opacity-80">You</div>
+          </div>
+        </li>
+
+        <!-- other users -->
+        <template x-for="user in $store.users.users.filter(u => !u.isSelf)" :key="user.id">
+          <li x-data class="flex flex-row gap-2 items-center p-2">
+              <img class="w-10 rounded-sm" :src="'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=' + user.id"/>
             </div>
-          </div>
-          <div class="chat-bubble mx-2">
-            <div class="text-xs opacity-50">Anakin</div>
-            <div x-text="message.text"></div>
-            <time class="text-xs opacity-50" x-text="formatTime(message.timestamp)"></time>
-          </div>
+            <div class="hidden lg:block">
+              <div x-text="user.name" class="font-bold"></div>
+              <div x-text="'Last seen ' + formatTime(user.lastSeen)" class="text-sm opacity-80"></div>
+            </div>
+          </li>
+        </template>
+      </ul>
+    </aside>
+
+    <!-- chat window -->
+    <main class="grow overflow-y-scroll bg-base-100 px-3 content-end ">
+      <div class="max-w-2xl mx-auto">
+
+        <!-- messages -->
+        <div x-data class="flex flex-col px-4 py-2 gap-4">
+          <template x-for="message in $store.room.messages" :key="message.id">
+            <div x-data="{ isSelf: message.userId == $store.user.id }" class="chat" :class="isSelf ? 'chat-end' : 'chat-start'">
+              <div class="chat-image avatar">
+                <div class="w-12 rounded-sm">
+                  <img :src="'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=' + message.userId"/>
+                </div>
+              </div>
+              <div class="chat-bubble mx-2" :class="isSelf ? 'bg-base-200' : 'bg-primary text-primary-content'">
+                <div class="text-sm font-bold" x-text="isSelf ? 'You' : $store.users.getUserById(message.userId).name"></div>
+                <div x-text="message.text"></div>
+                <div class="text-end text-xs opacity-80">
+                  <time x-text="formatTime(message.timestamp)"></time>
+                </div>
+              </div>
+            </div>
+          </template>
         </div>
-      </template>
-    </div>
-    
-    <!-- Chat message input area -->
-    <div id="message-editor" class="flex-none fixed bottom-0 max-w-xl w-full p-2 bg-base-200 shadow-sm rounded-md">
-      <textarea class="textarea w-full resize-none rounded-sm" placeholder="Message"></textarea>
-    </div>
-  </main>
-  
+
+        <!-- message input -->
+        <div class="sticky bottom-0">
+          <div class="h-10 bg-gradient-to-b from-transparent to-base-100"></div>
+          <div class="shadow-sm bg-base-100">
+            <textarea class="textarea m-0 w-full resize-none p-3 rounded-md" placeholder="Message"></textarea>
+          </div>
+          <div class="h-4 bg-base-100"></div>
+        </div>
+
+      </div>
+
+    </main>
+
 </body>
 </html>
