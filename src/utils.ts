@@ -1,4 +1,6 @@
-export const formatTime = function(timestamp: string): string{
-  let date = new Date(timestamp);
-  return(date.toLocaleTimeString());
+export const formatTime = function(time: string | Date): string {
+  if (typeof time === 'string') {
+    time = new Date(time);
+  }
+  return(time.toLocaleTimeString());
 }
