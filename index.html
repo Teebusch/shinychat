@@ -45,22 +45,41 @@
     <main class="grow overflow-y-scroll bg-base-100 px-3 content-end ">
       <div class="max-w-2xl mx-auto">
 
-        <!-- messages -->
+        <!-- events and messages -->
         <div x-data class="flex flex-col px-4 py-2 gap-4">
-          <template x-for="message in $store.room.messages" :key="message.id">
-            <div x-data="{ isSelf: message.userId == $store.user.id }" class="chat" :class="isSelf ? 'chat-end' : 'chat-start'">
-              <div class="chat-image avatar">
-                <div class="w-12 rounded-sm">
-                  <img :src="'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=' + message.userId"/>
+          <template x-for="event in $store.room.history" :key="event.id">
+            <div x-data="{
+              isSelf: event.userId == $store.user.id,
+              userName: $store.users.getUserById(event.userId).name
+            }">
+
+              <!-- event -->
+              <template x-if="event.type === 'user-joined' || event.type === 'user-left'">
+                <div class="text-left text-sm opacity-80 py-2">
+                  <span class="opacity-50" x-text="formatTime(event.timestamp)"></span>
+                  <span x-text="isSelf ? 'You' : userName"></span>
+                  <span x-text="event.type == 'user-joined' ? 'joined the room' : 'left the room'"></span>
                 </div>
-              </div>
-              <div class="chat-bubble mx-2" :class="isSelf ? 'bg-base-200' : 'bg-primary text-primary-content'">
-                <div class="text-sm font-bold" x-text="isSelf ? 'You' : $store.users.getUserById(message.userId).name"></div>
-                <div x-text="message.text"></div>
-                <div class="text-end text-xs opacity-80">
-                  <time x-text="formatTime(message.timestamp)"></time>
+              </template>
+              
+              <!-- message -->
+              <template x-if="event.type == 'message'">
+                <div class="chat" :class="isSelf ? 'chat-end' : 'chat-start'">
+                  <div class="chat-image avatar">
+                    <div class="w-12 rounded-sm">
+                      <img :src="'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=' + event.userId"/>
+                    </div>
+                  </div>
+                  <div class="chat-bubble mx-2" :class="isSelf ? 'bg-base-200' : 'bg-primary text-primary-content'">
+                    <div class="text-sm font-bold" x-text="isSelf ? 'You' : userName"></div>
+                    <div x-text="event.message"></div>
+                    <div class="text-end text-xs opacity-80">
+                      <time x-text="formatTime(event.timestamp)"></time>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </template>
+          
             </div>
           </template>
         </div>
