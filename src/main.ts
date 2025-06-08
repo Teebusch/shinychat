@@ -19,7 +19,7 @@ Alpine.store('user', {
 
 Alpine.store('users', {
   _users: [
-    { id: '111', name: 'Alice',   lastSeen: '2023-10-01 12:00', isSelf: true },
+    { id: '111', name: 'Alice',   lastSeen: '2023-10-01 12:00' },
     { id: '222', name: 'Bob',     lastSeen: '2023-10-01 12:00' },
     { id: '333', name: 'Charlie', lastSeen: '2023-10-01 12:00' },
     { id: '444', name: 'David',   lastSeen: '2023-10-01 12:00' },
@@ -76,6 +76,10 @@ Alpine.store('room', {
 
   updateHistory(history) {
     this._history = history
+  },
+
+  sendMessage(message: string) {
+    console.log('Sending message:', message)
   }
 
 } as Room)

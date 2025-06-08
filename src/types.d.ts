@@ -14,7 +14,6 @@ export type User = {
   id: string;
   name: string;
   lastSeen?: string;
-  isSelf?: boolean;
 }
 
 export type Users = {

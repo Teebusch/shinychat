@@ -28,7 +28,7 @@
         </li>
 
         <!-- other users -->
-        <template x-for="user in $store.users.users.filter(u => !u.isSelf)" :key="user.id">
+        <template x-for="user in $store.users.users.filter(u => u.userId !== $store.user.id)" :key="user.id">
           <li x-data class="flex flex-row gap-2 items-center p-2">
               <img class="w-10 rounded-sm" :src="'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=' + user.id"/>
             </div>
@@ -88,7 +88,21 @@
         <div class="sticky bottom-0">
           <div class="h-10 bg-gradient-to-b from-transparent to-base-100"></div>
           <div class="shadow-sm bg-base-100">
-            <textarea class="textarea m-0 w-full resize-none p-3 rounded-md" placeholder="Message"></textarea>
+            <textarea 
+            x-data="{
+              message: '',
+              sendMessage() {
+                if (this.message.trim() === '') return;
+                $store.room.sendMessage(this.message);
+                this.message = '';
+              }
+            }"
+            :value="message"
+            @input="message = $event.target.value"
+            @keyup.enter="if ($event.shiftKey) return; sendMessage()"
+            class="textarea m-0 w-full resize-none p-3 rounded-md" 
+            placeholder="Message" 
+            ></textarea>
           </div>
           <div class="h-4 bg-base-100"></div>
         </div>
