@@ -4,56 +4,64 @@ ChatRoom <- R6::R6Class(
   public = list(
     initialize = function(name) {
       private$users <- UserList$new()
-      private$events <- EventManager$new()
-      private$history <- EventLog$new()
+      private$events <- EventManager$new(broadcast_to_console = TRUE)
 
       # log all room-events to history
-      logging_event_subscriber <- LoggingEventSubscriber$new(
-        event_log = private$history
-      )
+      private$history <- EventLog$new()
+      logger <- LoggingEventSubscriber$new(event_log = private$history)
 
-      private$events$subscribe("chat-message", logging_event_subscriber)
-      private$events$subscribe("user-added", logging_event_subscriber)
-      private$events$subscribe("user-removed", logging_event_subscriber)
+      private$events$subscribe("chat-message", logger)
+      private$events$subscribe("user-joined", logger)
+      private$events$subscribe("user-left", logger)
 
       invisible(self)
     },
 
-    add_chat_message = function(chat_message) {
-      private$events$broadcast(Event("chat-message", chat_message))
+    add_message = function(user, message) {
+      event <- Event(
+        type = "chat-message",
+        data = ChatMessage(userId = user$get_id(), message = message)
+      )
+      private$events$broadcast(event)
       invisible(self)
     },
 
     add_user = function(user) {
       private$users$add(user)
       user$set_room(self)
-      private$events$broadcast(Event("user-added", user))
-
+      event <- Event(
+        type = "user-joined",
+        data = list(userId = user$get_id())
+      )
+      private$events$broadcast(event)
       invisible(self)
     },
 
     remove_user = function(user) {
       private$users$remove(user)
       user$set_room(NULL)
-      private$events$broadcast(Event("user-removed", user))
-
+      event <- Event(
+        type = "user-left",
+        data = list(userId = user$get_id())
+      )
+      private$events$broadcast(event)
       invisible(self)
     },
 
-    get_user_list = function() {
+    get_users = function() {
       private$users$get_all()
     },
 
-    subscribe_to_events = function(event_type, listener) {
-      private$events$subscribe(event_type, listener)
+    subscribe_to_events = function(type, listener) {
+      private$events$subscribe(type, listener)
     },
 
-    unsubscribe_from_events = function(event_type, listener) {
-      private$events$unsubscribe(event_type, listener)
+    unsubscribe_from_events = function(type, listener) {
+      private$events$unsubscribe(type, listener)
     },
 
     get_history = function(max_n = Inf) {
-      private$history$get_logged_events(max_n)
+      private$history$get_events(max_n)
     }
   ),
 
@@ -71,14 +79,13 @@ ChatUser <- R6::R6Class(
 
   public = list(
     initialize = function(name = NULL) {
-      private$uid <- get_uid()
+      private$id <- get_uid()
       private$name <- name %||% make_random_username()
-
-      self$register_activity()
+      self$update_last_seen()
     },
 
-    get_uid = function() {
-      private$uid
+    get_id = function() {
+      private$id
     },
 
     get_name = function() {
@@ -91,56 +98,43 @@ ChatUser <- R6::R6Class(
 
     set_room = function(room) {
       private$room <- room
+      self$update_last_seen()
       invisible(self)
     },
 
-    say = function(content) {
-      if (!is.null(private$room) && nchar(content) > 0) {
-        chat_message = ChatMessage(
-          author_uid = private$uid,
-          author_name = private$name,
-          content = content
-        )
-        private$room$add_chat_message(chat_message)
+    say = function(message) {
+      if (!is.null(private$room) && nchar(message) > 0) {
+        private$room$add_message(user = self, message = message)
       }
 
-      self$register_activity()
-
+      self$update_last_seen()
       invisible(self)
     },
 
-    get_last_active = function() {
-      private$last_active
+    get_last_seen = function() {
+      private$last_seen
     },
 
-    register_activity = function() {
-      private$last_active <- Sys.time()
+    update_last_seen = function() {
+      private$last_seen <- Sys.time()
     }
   ),
 
   private = list(
-    uid = NULL,
+    id = NULL,
     name = NULL,
-    avatar = NULL,
     room = NULL,
-    last_active = NULL
+    last_seen = NULL
   )
 )
 
 
-ChatMessage <- function(
-  author_uid = NA_character_,
-  author_name = NA_character_,
-  content = NA_character_
-) {
+ChatMessage <- function(userId, message) {
   structure(
     class = "ChatMessage",
     .Data = list(
-      message_uid = get_uid(),
-      time_sent = Sys.time(),
-      author_uid = author_uid,
-      author_name = author_name,
-      content = content
+      userId = userId,
+      message = message
     )
   )
 }

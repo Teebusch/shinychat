@@ -4,6 +4,15 @@ options(shiny.autoreload = TRUE)
 chat_room <- ChatRoom$new()
 avatar_cache <- AvatarCache$new()
 
+# do this once to setup:
+#file.copy(
+#  from = system.file(package = "shiny", "www/shared/shiny.js"),
+#  to = "src/shiny.js"
+#)
+#file.copy(
+#  from = system.file(package = "shiny", "www/shared/jquery.js"),
+#  to = "www/jquery.js"
+#)
 
 ui <- function(req) {
   path <- stringr::str_split_1(req$PATH_INFO, "\\/")
@@ -18,14 +27,18 @@ ui <- function(req) {
       content = avatar
     )
   } else {
-    res <- chat_ui()
+    res <- shiny::httpResponse(
+      status = 200L,
+      content_type = "text/html",
+      content = readr::read_file("www/index.html")
+    )
   }
 
   return(res)
 }
 
 
-# Exists for each individual user/seslsion
+# Exists for each individual user/session
 session_server <- function(input, output, session) {
   user <- ChatUser$new()
   chat_room$add_user(user)

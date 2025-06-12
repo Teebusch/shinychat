@@ -15,15 +15,14 @@ ViewModel <- R6::R6Class(
       private$user <- user
       private$room <- room
 
-      private$set_this_user_info()
-
       # initial render
+      private$update_this_user()
       private$update_user_list()
       private$update_room_history()
 
       # then listen for events and user inputs
       private$observe_user_inputs()
-      private$observe_room_events()
+      private$observe_room()
 
       invisible(self)
     }
@@ -38,36 +37,75 @@ ViewModel <- R6::R6Class(
     unsubscribe_from_room = NULL,
 
     # send general user info to frontend
-    set_this_user_info = function() {
-      user_info = list(
-        user_uid = private$user$get_uid(),
-        username = private$user$get_name()
+    update_this_user = function() {
+      private$session$sendCustomMessage(
+        "update-this-user",
+        list(
+          userId = private$user$get_id(),
+          name = private$user$get_name()
+        )
       )
-      private$session$sendCustomMessage("set-this-user-info", user_info)
     },
 
     # redraw user list
     update_user_list = function() {
-      users_in_room <- private$room$get_user_list()
-
-      user_list <- users_in_room |>
-        purrr::map(\(user) {
+      users <- private$room$get_users() |>
+        purrr::map(\(u) {
           list(
-            name = user$get_name(),
-            uid = user$get_uid(),
-            last_seen = user$get_last_active()
+            id = u$get_id(),
+            name = u$get_name(),
+            lastSeen = u$get_last_seen()
           )
         })
 
-      private$session$sendCustomMessage("update-user-list", user_list)
+      private$session$sendCustomMessage(
+        "update-user-list",
+        users
+      )
     },
 
     # redraw room history (replaces all contents in chat window)
     update_room_history = function() {
-      history <- private$room$get_history()
-      events <- purrr::map(history$event, \(event) as.list(event))
+      history <- private$room$get_history() |>
+        dplyr::arrange(timestamp) |>
+        dplyr::pull(event) |>
+        purrr::map(as.list)
 
-      private$session$sendCustomMessage("update-room-history", events)
+      private$session$sendCustomMessage(
+        "update-room-history",
+        history
+      )
+    },
+
+    forward_event_to_client = function(event) {
+      private$session$sendCustomMessage(
+        event$type,
+        as.list(event)
+      )
+    },
+
+     # watch for events from the room and forward them to the client
+    observe_room = function() {
+      # forward events to client
+      forward_to_client <- CallbackEventSubscriber$new(\(event) {
+        private$forward_event_to_client(event)
+        private$update_user_list()
+      })
+
+      unsubscribe_funs <- list(
+        private$room$subscribe_to_events("chat-message", forward_to_client),
+        private$room$subscribe_to_events("user-joined", forward_to_client),
+        private$room$subscribe_to_events("user-left", forward_to_client)
+      )
+
+      # store a function to unsubscribe
+      unsubscribe_fun <- \() lapply(unsubscribe_funs, rlang::exec)
+      private$unsubscribe_from_room <- unsubscribe_fun
+      invisible(unsubscribe_fun)
+    },
+
+    unobserve_room = function() {
+      private$unsubscribe_from_room()
     },
 
     # watch for inputs from this user
@@ -92,96 +130,9 @@ ViewModel <- R6::R6Class(
         session = private$session,
         \() private$room$remove_user(private$user)
       )
-    },
-
-    # watch for any events from the room
-    observe_room_events = function() {
-      # forward events to client
-      forward_event_subscriber <- CallbackEventSubscriber$new(\(event) {
-        private$forward_event_to_client(event)
-        private$update_user_list()
-      })
-
-      unsubscribe_funs <- list(
-        private$room$subscribe_to_events(
-          "chat-message",
-          forward_event_subscriber
-        ),
-        private$room$subscribe_to_events(
-          "user-added",
-          forward_event_subscriber
-        ),
-        private$room$subscribe_to_events(
-          "user-removed",
-          forward_event_subscriber
-        )
-      )
-
-      # store a function to unsubscribe
-      unsubscribe_fun <- \() lapply(unsubscribe_funs, rlang::exec)
-      private$unsubscribe_from_room <- unsubscribe_fun
-      invisible(unsubscribe_fun)
-    },
-
-    unobserve_room_events = function() {
-      private$unsubscribe_from_room()
-    },
-
-    forward_event_to_client = function(event) {
-      private$session$sendCustomMessage(event$event_type, as.list(event))
     }
   )
 )
-
-
-chat_ui <- function() {
-  bslib::page_sidebar(
-    window_title = "Shiny Chat",
-    lang = "en",
-    fillable = TRUE,
-    fillable_mobile = TRUE,
-
-    theme = bslib::bs_theme(
-      primary = "#4F6E58"
-    ),
-
-    # dependencies
-    tags$head(
-      tags$link(rel = "stylesheet", type = "text/css", href = "main.css"),
-      tags$script(src = "main.js")
-    ),
-
-    # sidebar with user list
-    sidebar = bslib::sidebar(
-      width = 400L,
-      bg = "#E4E2E0",
-      open = "desktop",
-
-      tags$div(
-        tags$h5("Active Users", tags$span(class = "n-active")),
-        tags$div(id = "user-list")
-      )
-    ),
-
-    # chat window
-    tags$div(
-      id = "chat",
-      class = "container-md",
-      tags$div(
-        id = "messages"
-      ),
-      tags$div(
-        id = "message-editor",
-        tags$textarea(
-          id = "new-message-text",
-          placeholder = "Message",
-          autofocus = NA,
-          minlength = 1L
-        )
-      )
-    )
-  )
-}
 
 
 AvatarCache = R6::R6Class(
@@ -206,7 +157,6 @@ AvatarCache = R6::R6Class(
         "https://api.dicebear.com/9.x/bottts-neutral/svg"
       ) |>
         httr2::req_url_query(
-          size = 60L,
           radius = 10L,
           seed = URLencode(id)
         )

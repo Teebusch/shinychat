@@ -7,20 +7,17 @@ EventManager <- R6::R6Class(
       private$broadcast_to_console = broadcast_to_console
     },
 
-    subscribe = function(event_type, listener) {
+    subscribe = function(type, listener) {
       private$listeners <- private$listeners |>
-        tibble::add_row(
-          event_type = event_type,
-          listener = list(listener)
-        )
+        tibble::add_row(type = type, listener = list(listener))
 
-      unsubscribe_fun <- \() self$unsubscribe(event_type, listener)
-      invisible(unsubscribe_fun)
+      unsub_fun <- \() self$unsubscribe(type, listener)
+      invisible(unsub_fun)
     },
 
-    unsubscribe = function(event_type, listener) {
+    unsubscribe = function(type, listener) {
       private$listeners <- private$listeners |>
-        dplyr::filter(event_type != .env$event_type) |>
+        dplyr::filter(type != .env$type) |>
         dplyr::filter(!identical(listener, .env$listener))
 
       invisible(self)
@@ -32,7 +29,7 @@ EventManager <- R6::R6Class(
       }
 
       private$listeners |>
-        dplyr::filter(event_type == event$event_type) |>
+        dplyr::filter(type == event$type) |>
         dplyr::pull("listener") |>
         purrr::walk(\(x) x$notify(event))
 
@@ -45,10 +42,9 @@ EventManager <- R6::R6Class(
   ),
 
   private = list(
-    broadcast_to_console = FALSE,
-
+    broadcast_to_console = NULL,
     listeners = tibble::tibble(
-      event_type = NA_character_,
+      type = NA_character_,
       listener = list()
     )
   )
@@ -56,11 +52,13 @@ EventManager <- R6::R6Class(
 
 
 # Individual event
-Event <- function(event_type, data) {
+Event <- function(type, data) {
   structure(
     class = "Event",
     .Data = list(
-      event_type = event_type,
+      id = get_uid(),
+      type = type,
+      timestamp = Sys.time(),
       data = data
     )
   )
@@ -68,30 +66,18 @@ Event <- function(event_type, data) {
 
 
 as.list.Event <- function(x, ...) {
-  event_type <- x$event_type
-  event_data <- x$data
-
-  res <- list(
-    event_type = event_type
-  )
-
-  if (event_type == "chat-message") {
-    res <- append(res, event_data)
-  }
-
-  if (event_type %in% c("user-added", "user-removed")) {
-    user <- event_data
-    res$username <- user$get_name()
-    res$user_uid <- user$get_uid()
-  }
-
-  return(res)
+  res <- list(id = x$id, type = x$type, timestamp = x$timestamp)
+  res <- append(res, x$data)
 }
 
 
 # Generic for Printing an event
 print.Event <- function(x, ...) {
-  sprintf("Event of type '%s'\n", x$event_type) |>
+  sprintf("Event of type '%s'\n", x$type) |>
+    cat()
+
+  data <- as.list(x)
+  paste(names(data), data) |>
     cat()
 }
 
@@ -101,9 +87,9 @@ EventLog <- R6::R6Class(
   "EventLog",
 
   public = list(
-    log_event = function(event) {
+    add = function(event) {
       new_entry <- tibble::tibble_row(
-        event_type = event$event_type,
+        type = event$type,
         timestamp = Sys.time(),
         event = event
       )
@@ -114,7 +100,7 @@ EventLog <- R6::R6Class(
       invisible(self)
     },
 
-    get_logged_events = function(max_n = Inf) {
+    get_events = function(max_n = Inf) {
       tail(private$logged_events, max_n)
     }
   ),
@@ -160,40 +146,13 @@ LoggingEventSubscriber <- R6::R6Class(
 
     notify = function(event) {
       if (!is.null(private$event_log)) {
-        private$event_log$log_event(event)
+        private$event_log$add(event)
       }
       invisible(self)
     }
   ),
 
   private = list(
-    event_log = NULL,
-    log_to_console = FALSE
-  )
-)
-
-
-# Event Subscriber for showing Event Info as Toast
-# - requires a Shiny session, passed via constructor
-ToastEventSubscriber <- R6::R6Class(
-  "ToastEventSubscriber",
-
-  public = list(
-    initialize = function(print_fun, session) {
-      private$print_fun <- print_fun
-      private$session <- session
-      invisible(self)
-    },
-
-    notify = function(event) {
-      text <- private$print_fun(event)
-      shiny::showNotification(text, session = private$session)
-      invisible(self)
-    }
-  ),
-
-  private = list(
-    print_fun = NULL,
-    session = NULL
+    event_log = NULL
   )
 )

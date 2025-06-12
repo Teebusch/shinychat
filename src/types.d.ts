@@ -5,8 +5,8 @@ declare global {
 }
 
 export type ThisUser = {
-  id: string;
-  name: string;
+  id: string | undefined;
+  name: string | undefined;
   update: (newData: User) => void;
 }
 

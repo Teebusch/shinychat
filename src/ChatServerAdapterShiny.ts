@@ -1,29 +1,36 @@
-import type { ChatEvent, ThisUser, User } from "./types";
+import type { ChatEvent, User } from "./types";
+
+declare global {
+  var Shiny: any;  // TODO: import Shiny Type Definitions
+}
 
 const mockShinyObject = {
-  setInputValue: (name: string, value: any, options: {}) => {
+  handlers: [] as {name: string, handler: (message: any) => void}[],
+
+  setInputValue: function(name: string, value: any, options: {}) {
     console.log(`Mock Shiny: setInputValue called with name=${name}, value=${value}, options=${JSON.stringify(options)}`);
   },
-  addCustomMessageHandler: (name: string, handler: (message: any) => void) => {
+
+  addCustomMessageHandler: function(name: string, handler: (message: any) => void) {
+    this.handlers.push({ name: name, handler: handler });
     console.log(`Mock Shiny: CustomMessageHandler added for Event '${name}'`);
   }
 }
-
 
 
 export class ChatServerAdapter {
   #Shiny;
 
   constructor(mockShiny = false) {
-    if (mockShiny) {
-      this.#Shiny = mockShinyObject;
-      return;
-    }
-
     this.#Shiny = window.Shiny;
-
+    
     if (!this.#Shiny) {
-      throw new Error("Shiny JavaScript library is not available.");
+      if (mockShiny) {
+        console.warn("Shiny JavaScript library is not available. Using mock Shiny object.");
+        this.#Shiny = mockShinyObject;
+      } else {
+        throw new Error("Shiny JavaScript library is not available.");
+      }
     }
   }
 
@@ -33,8 +40,8 @@ export class ChatServerAdapter {
 
   onChatEvent(callback: (event: ChatEvent) => void) {
     this.#Shiny.addCustomMessageHandler("chat-message", callback);
-    this.#Shiny.addCustomMessageHandler("user-added", callback);
-    this.#Shiny.addCustomMessageHandler("user-removed", callback);
+    this.#Shiny.addCustomMessageHandler("user-joined", callback);
+    this.#Shiny.addCustomMessageHandler("user-left", callback);
   }
   
   onUpdateRoomHistory(callback: (history: ChatEvent[]) => void) {

@@ -5,6 +5,8 @@
   <link rel="icon" type="image/svg+xml" href="/vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Shinychat</title>
+  <script src="/jquery.js"></script>
+  <script src="/shiny.js"></script>
 </head>
 <body class="flex h-screen w-screen">
   <script type="module" src="/src/main.ts"></script>
@@ -19,7 +21,7 @@
 
         <!-- self -->
         <li x-data class="flex flex-row gap-2 items-center rouded-lg p-2 bg-base-300">
-            <img class="w-10 rounded-sm" :src="'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=' + $store.user.id"/>
+            <img class="w-10 rounded-sm" :src="'avatar/' + $store.user.id"/>
           </div>
           <div class="hidden lg:block">
             <div x-text="$store.user.name" class="font-bold"></div>
@@ -30,7 +32,7 @@
         <!-- other users -->
         <template x-for="user in $store.users.users.filter(u => u.userId !== $store.user.id)" :key="user.id">
           <li x-data class="flex flex-row gap-2 items-center p-2">
-              <img class="w-10 rounded-sm" :src="'https://api.dicebear.com/9.x/bottts-neutral/svg?seed=' + user.id"/>
+              <img class="w-10 rounded-sm" :src="'avatar/' + user.id"/>
             </div>
             <div class="hidden lg:block">
               <div x-text="user.name" class="font-bold"></div>
@@ -50,7 +52,7 @@
           <template x-for="event in $store.room.history" :key="event.id">
             <div x-data="{
               isSelf: event.userId == $store.user.id,
-              userName: $store.users.getUserById(event.userId).name
+              userName: $store.users.getUserById(event.userId)?.name
             }">
 
               <!-- event -->
