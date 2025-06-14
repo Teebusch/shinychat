@@ -41,7 +41,7 @@ ViewModel <- R6::R6Class(
       private$session$sendCustomMessage(
         "update-this-user",
         list(
-          userId = private$user$get_id(),
+          id = private$user$get_id(),
           name = private$user$get_name()
         )
       )

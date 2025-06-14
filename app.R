@@ -1,9 +1,3 @@
-options(shiny.autoreload = TRUE)
-
-# Exists globally for all users/sessions on server
-chat_room <- ChatRoom$new()
-avatar_cache <- AvatarCache$new()
-
 # do this once to setup:
 #file.copy(
 #  from = system.file(package = "shiny", "www/shared/shiny.js"),
@@ -13,6 +7,16 @@ avatar_cache <- AvatarCache$new()
 #  from = system.file(package = "shiny", "www/shared/jquery.js"),
 #  to = "www/jquery.js"
 #)
+
+shiny::addResourcePath("assets", "www/client/assets")
+
+
+options(shiny.autoreload = TRUE)
+
+# Exists globally for all users/sessions on server
+chat_room <- ChatRoom$new()
+avatar_cache <- AvatarCache$new()
+
 
 ui <- function(req) {
   path <- stringr::str_split_1(req$PATH_INFO, "\\/")
@@ -30,7 +34,7 @@ ui <- function(req) {
     res <- shiny::httpResponse(
       status = 200L,
       content_type = "text/html",
-      content = readr::read_file("www/index.html")
+      content = readr::read_file("www/client/index.html")
     )
   }
 

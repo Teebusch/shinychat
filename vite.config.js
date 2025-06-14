@@ -6,7 +6,6 @@ export default defineConfig({
     tailwindcss()
   ],
   build: {
-    outDir: 'www',
-    emptyOutDir: false,
+    outDir: 'www/client',
   },
 });

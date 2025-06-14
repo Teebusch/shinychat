@@ -4,7 +4,7 @@ ChatRoom <- R6::R6Class(
   public = list(
     initialize = function(name) {
       private$users <- UserList$new()
-      private$events <- EventManager$new(broadcast_to_console = TRUE)
+      private$events <- EventManager$new(broadcast_to_console = FALSE)
 
       # log all room-events to history
       private$history <- EventLog$new()

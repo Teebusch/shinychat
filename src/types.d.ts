@@ -4,23 +4,16 @@ declare global {
   var formatTime: (date: string | Date) => string;
 }
 
-export type ThisUser = {
+export type User = {
   id: string | undefined;
   name: string | undefined;
-  update: (newData: User) => void;
-}
-
-export type User = {
-  id: string;
-  name: string;
+  // Optional properties to track user state
   lastSeen?: string;
 }
 
 export type Users = {
-  _users: User[];
-  get users(): User[];
+  users: User[];
   getUserById: (id: string) => User | undefined;
-  updateUsers: (users: User[]) => void;
 }
 
 export type ChatEvent = {
@@ -32,11 +25,8 @@ export type ChatEvent = {
 }
 
 export type Room = {
-  _history: ChatEvent[];
-  get messages(): ChatEvent[];
-  get roomEvents(): ChatEvent[];
-  get history(): ChatEvent[];
+  history: ChatEvent[];
   addEvent: (event: ChatEvent) => void;
-  updateHistory: (history: ChatEvent[]) => void;
+  sendMessage: (message: string) => void;
 }
 
